@@ -7,23 +7,25 @@ export 'src/notification_event_type.dart';
 export 'src/notification_content.dart';
 
 class NotificationWithPool {
-  static Future<void> initilize({
+  static Future<void> initialize({
     List<NotificationContent>? contentPool,
   }) async {
-    return await NotificationWithPoolPlatform.instance.initilize(
+    return await NotificationWithPoolPlatform.instance.initialize(
       contentPool: contentPool,
     );
   }
 
-  static Future<void> createScheduledNotificationWithContentPool({
+  static Future<void> createDailyNotificationWithContentPool({
     required String identifier,
-    required DateTime scheduledTime,
-    required Duration interval,
+    required int hour,
+    required int minute,
+    int second = 0,
   }) async {
-    return await NotificationWithPoolPlatform.instance.createScheduledNotificationWithContentPool(
+    return await NotificationWithPoolPlatform.instance.createDailyNotificationWithContentPool(
       identifier: identifier,
-      scheduledTime: scheduledTime,
-      interval: interval,
+      hour: hour,
+      minute: minute,
+      second: second,
     );
   }
 
@@ -35,27 +37,13 @@ class NotificationWithPool {
     );
   }
 
-  static Future<void> createNotification({
+  static Future<void> createDelayedNotificationWithContentPool({
     required String identifier,
-    required NotificationContent content,
+    required Duration delay,
   }) async {
-    return await NotificationWithPoolPlatform.instance.createNotification(
+    return await NotificationWithPoolPlatform.instance.createDelayedNotificationWithContentPool(
       identifier: identifier,
-      content: content,
-    );
-  }
-
-  static Future<void> createScheduledNotification({
-    required String identifier,
-    required NotificationContent content,
-    required DateTime scheduledTime,
-    required Duration interval,
-  }) async {
-    return await NotificationWithPoolPlatform.instance.createScheduledNotification(
-      identifier: identifier,
-      content: content,
-      scheduledTime: scheduledTime,
-      interval: interval,
+      delay: delay,
     );
   }
 
@@ -64,18 +52,6 @@ class NotificationWithPool {
   }) async {
     return await NotificationWithPoolPlatform.instance.updateContentPool(
       contentPool: contentPool,
-    );
-  }
-
-  static Future<void> updateScheduled({
-    required String identifier,
-    required DateTime scheduledTime,
-    required Duration interval,
-  }) async {
-    return await NotificationWithPoolPlatform.instance.updateScheduled(
-      identifier: identifier,
-      scheduledTime: scheduledTime,
-      interval: interval,
     );
   }
 

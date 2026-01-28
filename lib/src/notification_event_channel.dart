@@ -8,7 +8,9 @@ class NotificationEventChannel {
   static Stream<NotificationEvent>? _stream;
 
   static Stream<NotificationEvent> get events {
-    _stream ??= _channel.receiveBroadcastStream().map((event) => NotificationEvent.fromMap(event));
+    _stream ??= _channel
+        .receiveBroadcastStream()
+        .map((event) => NotificationEvent.fromMap(event));
     return _stream!;
   }
 }

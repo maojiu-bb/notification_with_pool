@@ -1,12 +1,12 @@
 class MethodKeys {
-  static const String initilize = 'initilize';
-  static const String createScheduledNotificationWithContentPool =
-      'createScheduledNotificationWithContentPool';
-  static const String createNotificationWithContentPool = 'createNotificationWithContentPool';
-  static const String createNotification = 'createNotification';
-  static const String createScheduledNotification = 'createScheduledNotification';
-  static const String updateContentPool = 'updateContentPool';
-  static const String updateScheduled = 'updateScheduled';
-  static const String cancel = 'cancel';
-  static const String cancelAll = 'cancelAll';
+  static const String INITIALIZE = 'initialize';
+  static const String CREATE_NOTIFICATION_WITH_CONTENT_POOL =
+      'createNotificationWithContentPool';
+  static const String CREATE_DAILY_NOTIFICATION_WITH_CONTENT_POOL =
+      'createDailyNotificationWithContentPool';
+  static const String CREATE_DELAYED_NOTIFICATION_WITH_CONTENT_POOL =
+      'createDelayedNotificationWithContentPool';
+  static const String UPDATE_CONTENT_POOL = 'updateContentPool';
+  static const String CANCEL = 'cancel';
+  static const String CANCEL_ALL = 'cancelAll';
 }

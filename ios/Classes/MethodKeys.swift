@@ -9,21 +9,20 @@ import Foundation
 
 final class MethodKeys {
 
-    static let initilize = "initilize"
-    
-    static let createScheduledNotificationWithContentPool = "createScheduledNotificationWithContentPool"
-    
-    static let createNotificationWithContentPool = "createNotificationWithContentPool"
-    
-    static let createNotification = "createNotification"
-    
-    static let createScheduledNotification = "createScheduledNotification"
-    
-    static let updateContentPool = "updateContentPool"
-    
-    static let updateScheduled = "updateScheduled"
+    static let INITIALIZE = "initialize"
 
-    static let cancel = "cancel"
+    static let CREATE_NOTIFICATION_WITH_CONTENT_POOL =
+        "createNotificationWithContentPool"
 
-    static let cancelAll = "cancelAll"
+    static let CREATE_DAILY_NOTIFICATION_WITH_CONTENT_POOL =
+        "createDailyNotificationWithContentPool"
+
+    static let CREATE_DELAYED_NOTIFICATION_WITH_CONTENT_POOL =
+        "createDelayedNotificationWithContentPool"
+
+    static let UPDATE_CONTENT_POOL = "updateContentPool"
+
+    static let CANCEL = "cancel"
+
+    static let CANCEL_ALL = "cancelAll"
 }

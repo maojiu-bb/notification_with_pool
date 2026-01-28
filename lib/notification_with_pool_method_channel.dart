@@ -12,27 +12,29 @@ class MethodChannelNotificationWithPool extends NotificationWithPoolPlatform {
   final methodChannel = const MethodChannel('notification_with_pool');
 
   @override
-  Future<void> initilize({
+  Future<void> initialize({
     List<NotificationContent>? contentPool,
   }) async {
     return await methodChannel.invokeMethod<void>(
-      MethodKeys.initilize,
+      MethodKeys.INITIALIZE,
       {'contentPool': contentPool?.map((content) => content.toJson()).toList()},
     );
   }
 
   @override
-  Future<void> createScheduledNotificationWithContentPool({
+  Future<void> createDailyNotificationWithContentPool({
     required String identifier,
-    required DateTime scheduledTime,
-    required Duration interval,
+    required int hour,
+    required int minute,
+    int second = 0,
   }) async {
     return await methodChannel.invokeMethod<void>(
-      MethodKeys.createScheduledNotificationWithContentPool,
+      MethodKeys.CREATE_DAILY_NOTIFICATION_WITH_CONTENT_POOL,
       {
         'identifier': identifier,
-        'scheduledTime': scheduledTime.millisecondsSinceEpoch / 1000.0,
-        'interval': interval.inSeconds,
+        'hour': hour,
+        'minute': minute,
+        'second': second,
       },
     );
   }
@@ -42,7 +44,7 @@ class MethodChannelNotificationWithPool extends NotificationWithPoolPlatform {
     required String identifier,
   }) async {
     return await methodChannel.invokeMethod<void>(
-      MethodKeys.createNotificationWithContentPool,
+      MethodKeys.CREATE_NOTIFICATION_WITH_CONTENT_POOL,
       {
         'identifier': identifier,
       },
@@ -50,33 +52,15 @@ class MethodChannelNotificationWithPool extends NotificationWithPoolPlatform {
   }
 
   @override
-  Future<void> createNotification({
-    required NotificationContent content,
+  Future<void> createDelayedNotificationWithContentPool({
     required String identifier,
+    required Duration delay,
   }) async {
     return await methodChannel.invokeMethod<void>(
-      MethodKeys.createNotification,
+      MethodKeys.CREATE_DELAYED_NOTIFICATION_WITH_CONTENT_POOL,
       {
         'identifier': identifier,
-        'content': content.toJson(),
-      },
-    );
-  }
-
-  @override
-  Future<void> createScheduledNotification({
-    required String identifier,
-    required NotificationContent content,
-    required DateTime scheduledTime,
-    required Duration interval,
-  }) async {
-    return await methodChannel.invokeMethod<void>(
-      MethodKeys.createScheduledNotification,
-      {
-        'identifier': identifier,
-        'content': content.toJson(),
-        'scheduledTime': scheduledTime.millisecondsSinceEpoch / 1000.0,
-        'interval': interval.inSeconds,
+        'delay': delay.inSeconds,
       },
     );
   }
@@ -86,25 +70,9 @@ class MethodChannelNotificationWithPool extends NotificationWithPoolPlatform {
     required List<NotificationContent> contentPool,
   }) async {
     return await methodChannel.invokeMethod<void>(
-      MethodKeys.updateContentPool,
+      MethodKeys.UPDATE_CONTENT_POOL,
       {
         'contentPool': contentPool.map((content) => content.toJson()).toList(),
-      },
-    );
-  }
-
-  @override
-  Future<void> updateScheduled({
-    required String identifier,
-    required DateTime scheduledTime,
-    required Duration interval,
-  }) async {
-    return await methodChannel.invokeMethod<void>(
-      MethodKeys.updateScheduled,
-      {
-        'identifier': identifier,
-        'scheduledTime': scheduledTime.millisecondsSinceEpoch / 1000.0,
-        'interval': interval.inSeconds,
       },
     );
   }
@@ -114,7 +82,7 @@ class MethodChannelNotificationWithPool extends NotificationWithPoolPlatform {
     required String identifier,
   }) async {
     return await methodChannel.invokeMethod<void>(
-      MethodKeys.cancel,
+      MethodKeys.CANCEL,
       {'identifier': identifier},
     );
   }
@@ -122,7 +90,7 @@ class MethodChannelNotificationWithPool extends NotificationWithPoolPlatform {
   @override
   Future<void> cancelAll() async {
     return await methodChannel.invokeMethod<void>(
-      MethodKeys.cancelAll,
+      MethodKeys.CANCEL_ALL,
     );
   }
 }

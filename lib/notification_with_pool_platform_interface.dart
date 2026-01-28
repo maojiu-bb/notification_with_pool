@@ -24,55 +24,44 @@ abstract class NotificationWithPoolPlatform extends PlatformInterface {
     _instance = instance;
   }
 
-  Future<void> initilize({
+  Future<void> initialize({
     List<NotificationContent>? contentPool,
   }) async {
-    throw UnimplementedError('initilize() has not been implemented.');
+    throw UnimplementedError('initialize() has not been implemented.');
   }
 
-  Future<void> createScheduledNotificationWithContentPool({
+  Future<void> createDailyNotificationWithContentPool({
     required String identifier,
-    required DateTime scheduledTime,
-    required Duration interval,
+    required int hour,
+    required int minute,
+    int second = 0,
   }) async {
     throw UnimplementedError(
-        'createScheduledNotificationWithContentPool() has not been implemented.');
+      'createDailyNotificationWithContentPool() has not been implemented.',
+    );
   }
 
   Future<void> createNotificationWithContentPool({
     required String identifier,
   }) async {
-    throw UnimplementedError('createNotificationWithContentPool() has not been implemented.');
+    throw UnimplementedError(
+      'createNotificationWithContentPool() has not been implemented.',
+    );
   }
 
-  Future<void> createNotification({
+  Future<void> createDelayedNotificationWithContentPool({
     required String identifier,
-    required NotificationContent content,
+    required Duration delay,
   }) async {
-    throw UnimplementedError('createNotification() has not been implemented.');
-  }
-
-  Future<void> createScheduledNotification({
-    required String identifier,
-    required NotificationContent content,
-    required DateTime scheduledTime,
-    required Duration interval,
-  }) async {
-    throw UnimplementedError('createScheduledNotification() has not been implemented.');
+    throw UnimplementedError(
+      'createDelayedNotificationWithContentPool() has not been implemented.',
+    );
   }
 
   Future<void> updateContentPool({
     required List<NotificationContent> contentPool,
   }) async {
     throw UnimplementedError('updateContentPool() has not been implemented.');
-  }
-
-  Future<void> updateScheduled({
-    required String identifier,
-    required DateTime scheduledTime,
-    required Duration interval,
-  }) async {
-    throw UnimplementedError('updateScheduled() has not been implemented.');
   }
 
   Future<void> cancel({

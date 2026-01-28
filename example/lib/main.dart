@@ -47,7 +47,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _initializeNotifications() async {
     // Initialize with a content pool
-    await NotificationWithPool.initilize(
+    await NotificationWithPool.initialize(
       contentPool: [
         const NotificationContent(
           title: 'Daily Tip',
@@ -72,39 +72,23 @@ class _MyHomePageState extends State<MyHomePage> {
     _showSnackbar('Notification created from pool');
   }
 
-  void _createCustomNotification() async {
-    await NotificationWithPool.createNotification(
-      identifier: 'custom_notification_${DateTime.now().millisecondsSinceEpoch}',
-      content: const NotificationContent(
-        title: 'Custom Notification',
-        body: 'This is a custom notification message',
-      ),
+  void _createDelayedNotificationFromPool() async {
+    await NotificationWithPool.createDelayedNotificationWithContentPool(
+      identifier: 'delayed_pool_notification',
+      delay: const Duration(seconds: 10),
     );
-    _showSnackbar('Custom notification created');
+    _showSnackbar('Delayed notification created (will fire in 10 seconds)');
   }
 
-  void _createScheduledNotificationFromPool() async {
-    final scheduledTime = DateTime.now().add(const Duration(seconds: 10));
-    await NotificationWithPool.createScheduledNotificationWithContentPool(
-      identifier: 'scheduled_pool_notification',
-      scheduledTime: scheduledTime,
-      interval: const Duration(minutes: 30),
+  void _createDailyNotificationFromPool() async {
+    final nextMinute = DateTime.now().add(const Duration(minutes: 1));
+    await NotificationWithPool.createDailyNotificationWithContentPool(
+      identifier: 'daily_pool_notification',
+      hour: nextMinute.hour,
+      minute: nextMinute.minute,
+      second: 0,
     );
-    _showSnackbar('Scheduled notification created (will fire in 10 seconds)');
-  }
-
-  void _createScheduledNotification() async {
-    final scheduledTime = DateTime.now().add(const Duration(seconds: 5));
-    await NotificationWithPool.createScheduledNotification(
-      identifier: 'scheduled_custom_notification',
-      content: const NotificationContent(
-        title: 'Scheduled Reminder',
-        body: 'This notification was scheduled 5 seconds ago',
-      ),
-      scheduledTime: scheduledTime,
-      interval: const Duration(hours: 1),
-    );
-    _showSnackbar('Scheduled custom notification (will fire in 5 seconds)');
+    _showSnackbar('Daily notification created');
   }
 
   void _updateContentPool() async {
@@ -125,9 +109,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _cancelNotification() async {
     await NotificationWithPool.cancel(
-      identifier: 'scheduled_pool_notification',
+      identifier: 'delayed_pool_notification',
     );
-    _showSnackbar('Scheduled pool notification canceled');
+    _showSnackbar('Delayed pool notification canceled');
   }
 
   void _cancelAllNotifications() async {
@@ -167,19 +151,14 @@ class _MyHomePageState extends State<MyHomePage> {
               label: const Text('Create from Pool'),
             ),
             ElevatedButton.icon(
-              onPressed: _createCustomNotification,
-              icon: const Icon(Icons.notification_add),
-              label: const Text('Create Custom'),
-            ),
-            ElevatedButton.icon(
-              onPressed: _createScheduledNotificationFromPool,
-              icon: const Icon(Icons.schedule),
-              label: const Text('Scheduled from Pool (10s)'),
-            ),
-            ElevatedButton.icon(
-              onPressed: _createScheduledNotification,
+              onPressed: _createDelayedNotificationFromPool,
               icon: const Icon(Icons.timer),
-              label: const Text('Scheduled Custom (5s)'),
+              label: const Text('Delayed from Pool (10s)'),
+            ),
+            ElevatedButton.icon(
+              onPressed: _createDailyNotificationFromPool,
+              icon: const Icon(Icons.schedule),
+              label: const Text('Daily from Pool'),
             ),
             const Divider(height: 32),
             const Text(

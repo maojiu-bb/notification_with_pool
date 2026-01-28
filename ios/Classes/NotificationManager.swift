@@ -8,11 +8,6 @@
 import Foundation
 import UserNotifications
 
-struct ScheduleConfig {
-    let interval: TimeInterval
-    let useContentPool: Bool
-}
-
 class NotificationManager: NSObject {
     static let shared = NotificationManager()
 
@@ -27,10 +22,12 @@ class NotificationManager: NSObject {
 
     private var listeners = NSHashTable<AnyObject>.weakObjects()
 
-    private var scheduleConfigs: [String: ScheduleConfig] = [:]
+    private let dailyScheduleStorageKey = "notification_with_pool_daily_schedule_times"
 
+    private var dailyScheduleTimes: [String: DateComponents] = [:]
 
-    func initilize(contentPool: [NotificationContent]? = nil) {
+    func initialize(contentPool: [NotificationContent]? = nil) {
+        loadDailyScheduleTimes()
         if let pool = contentPool {
             self.contentPool = pool
             print("[NotificationWithPool]: Content pool initialized with \(pool.count) items")
@@ -43,151 +40,102 @@ class NotificationManager: NSObject {
                 self.requestNotificationPermission { granted in
                     self.hasPermission = granted
                     print(granted ? "[NotificationWithPool]: Notification permission granted" : "[NotificationWithPool]: Notification permission denied")
+                    if granted {
+                        self.ensureDailyNotificationsScheduled()
+                    }
                 }
             } else {
                 self.hasPermission = true
                 print("[NotificationWithPool]: Notification permission already granted")
+                self.ensureDailyNotificationsScheduled()
             }
         }
     }
 
 
-    func createScheduledNotificationWithContentPool(
+    func createDailyNotificationWithContentPool(
         identifier: String,
-        scheduledTime: Date,
-        interval: TimeInterval
+        hour: Int,
+        minute: Int,
+        second: Int
     ) {
         guard let content = randomContent() else {
             print("[NotificationWithPool]: Failed to get random content from pool")
             return
         }
 
-        scheduleConfigs[identifier] = ScheduleConfig(
-            interval: interval,
-            useContentPool: true
+        var components = DateComponents()
+        components.hour = hour
+        components.minute = minute
+        components.second = second
+        dailyScheduleTimes[identifier] = components
+        saveDailyScheduleTimes()
+
+        UNUserNotificationCenter.current().removePendingNotificationRequests(
+            withIdentifiers: [identifier]
         )
 
-        createScheduledNotification(
+        let trigger = makeDailyCalendarTrigger(components: components)
+
+        scheduleNotification(
             identifier: identifier,
             content: content,
-            scheduledTime: scheduledTime,
-            interval: 0
+            trigger: trigger
         )
     }
 
 
     func createNotificationWithContentPool(identifier: String) {
         guard let content = randomContent() else { return }
-        createNotification(identifier: identifier, content: content)
+
+        let trigger = UNTimeIntervalNotificationTrigger(
+            timeInterval: 1,
+            repeats: false
+        )
+
+        scheduleNotification(
+            identifier: identifier,
+            content: content,
+            trigger: trigger
+        )
     }
 
 
-    func createNotification(identifier: String, content: NotificationContent) {
-        guard hasPermission else { return }
-
-        buildNotificationContent(from: content) { notificationContent in
-            let trigger = UNTimeIntervalNotificationTrigger(
-                timeInterval: 1,
-                repeats: false
-            )
-
-            let request = UNNotificationRequest(
-                identifier: identifier,
-                content: notificationContent,
-                trigger: trigger
-            )
-
-            UNUserNotificationCenter.current().add(request) { [weak self] error in
-                if error == nil {
-                    DispatchQueue.main.async {
-                        self?.notify(.scheduled(identifier: identifier))
-                    }
-                }
-            }
-        }
-    }
-
-
-    func createScheduledNotification(
+    func createDelayedNotificationWithContentPool(
         identifier: String,
-        content: NotificationContent,
-        scheduledTime: Date,
-        interval: TimeInterval
+        delay: TimeInterval
     ) {
-        guard hasPermission else {
-            print("[NotificationWithPool]: No notification permission! Cannot schedule notification")
+        guard let content = randomContent() else {
+            print("[NotificationWithPool]: Failed to get random content from pool")
             return
         }
 
-        let trigger = makeTrigger(date: scheduledTime, interval: interval)
+        let trigger = UNTimeIntervalNotificationTrigger(
+            timeInterval: max(1, delay),
+            repeats: false
+        )
 
-        buildNotificationContent(from: content) { notificationContent in
-            let request = UNNotificationRequest(
-                identifier: identifier,
-                content: notificationContent,
-                trigger: trigger
-            )
-
-            UNUserNotificationCenter.current().add(request) { [weak self] error in
-                if let error = error {
-                    print("[NotificationWithPool]: Failed to add notification: \(error.localizedDescription)")
-                } else {
-                    print("[NotificationWithPool]: Notification scheduled successfully: \(identifier)")
-                    DispatchQueue.main.async {
-                        self?.notify(.scheduled(identifier: identifier))
-                    }
-                }
-            }
-        }
+        scheduleNotification(
+            identifier: identifier,
+            content: content,
+            trigger: trigger
+        )
     }
-
 
     func updateContentPool(contentPool: [NotificationContent]) {
         self.contentPool = contentPool
     }
 
-
-    func updateScheduled(
-        identifier: String,
-        scheduledTime: Date,
-        interval: TimeInterval
-    ) {
-        UNUserNotificationCenter.current()
-            .getPendingNotificationRequests { requests in
-                guard let oldRequest = requests.first(where: { $0.identifier == identifier }),
-                      let oldContent = oldRequest.content as? UNMutableNotificationContent
-                else { return }
-
-                let trigger = self.makeTrigger(
-                    date: scheduledTime,
-                    interval: interval
-                )
-
-                let newRequest = UNNotificationRequest(
-                    identifier: identifier,
-                    content: oldContent,
-                    trigger: trigger
-                )
-
-                UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [identifier])
-                UNUserNotificationCenter.current().add(newRequest) { [weak self] error in
-                    if error == nil {
-                        DispatchQueue.main.async {
-                            self?.notify(.scheduled(identifier: identifier))
-                        }
-                    }
-                }
-            }
-    }
-
     func cancel(identifier: String) {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [identifier])
-        scheduleConfigs.removeValue(forKey: identifier)
+        dailyScheduleTimes.removeValue(forKey: identifier)
+        saveDailyScheduleTimes()
     }
 
     func cancelAll() {
         UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
-        scheduleConfigs.removeAll()
+        dailyScheduleTimes.removeAll()
+        saveDailyScheduleTimes()
     }
 
 }
@@ -218,22 +166,75 @@ extension NotificationManager {
         return contentPool.randomElement()
     }
 
-    func makeTrigger(date: Date, interval: TimeInterval) -> UNNotificationTrigger {
-        if interval > 0 {
-            return UNTimeIntervalNotificationTrigger(
-                timeInterval: interval,
-                repeats: true
-            )
-        } else {
-            let timeIntervalFromNow = date.timeIntervalSinceNow
-
-            let triggerInterval = max(1, timeIntervalFromNow)
-
-            return UNTimeIntervalNotificationTrigger(
-                timeInterval: triggerInterval,
-                repeats: false
-            )
+    private func saveDailyScheduleTimes() {
+        let stored = dailyScheduleTimes.mapValues { components in
+            [
+                "hour": components.hour ?? 0,
+                "minute": components.minute ?? 0,
+                "second": components.second ?? 0
+            ]
         }
+        UserDefaults.standard.set(stored, forKey: dailyScheduleStorageKey)
+    }
+
+    private func loadDailyScheduleTimes() {
+        guard let stored = UserDefaults.standard.dictionary(forKey: dailyScheduleStorageKey)
+            as? [String: [String: Int]] else {
+            return
+        }
+
+        var result: [String: DateComponents] = [:]
+        for (identifier, values) in stored {
+            var components = DateComponents()
+            components.hour = values["hour"]
+            components.minute = values["minute"]
+            components.second = values["second"]
+            result[identifier] = components
+        }
+        dailyScheduleTimes = result
+    }
+
+    private func ensureDailyNotificationsScheduled() {
+        UNUserNotificationCenter.current()
+            .getPendingNotificationRequests { [weak self] requests in
+                guard let self = self else { return }
+                let pendingIdentifiers = Set(requests.map { $0.identifier })
+
+                for (identifier, components) in self.dailyScheduleTimes
+                where !pendingIdentifiers.contains(identifier) {
+                    self.rescheduleDailyNotification(
+                        identifier: identifier,
+                        components: components
+                    )
+                }
+            }
+    }
+
+    private func makeDailyCalendarTrigger(
+        components: DateComponents
+    ) -> UNNotificationTrigger {
+        return UNCalendarNotificationTrigger(
+            dateMatching: components,
+            repeats: true
+        )
+    }
+
+    private func rescheduleDailyNotification(
+        identifier: String,
+        components: DateComponents
+    ) {
+        guard let content = randomContent() else {
+            print("[NotificationWithPool]: Failed to get random content from pool")
+            return
+        }
+
+        let trigger = makeDailyCalendarTrigger(components: components)
+
+        scheduleNotification(
+            identifier: identifier,
+            content: content,
+            trigger: trigger
+        )
     }
 
     func buildNotificationContent(
@@ -256,6 +257,36 @@ extension NotificationManager {
                 notificationContent.attachments = [attachment]
             }
             completion(notificationContent)
+        }
+    }
+
+    private func scheduleNotification(
+        identifier: String,
+        content: NotificationContent,
+        trigger: UNNotificationTrigger
+    ) {
+        guard hasPermission else {
+            print("[NotificationWithPool]: No notification permission! Cannot schedule notification")
+            return
+        }
+
+        buildNotificationContent(from: content) { notificationContent in
+            let request = UNNotificationRequest(
+                identifier: identifier,
+                content: notificationContent,
+                trigger: trigger
+            )
+
+            UNUserNotificationCenter.current().add(request) { [weak self] error in
+                if let error = error {
+                    print("[NotificationWithPool]: Failed to add notification: \(error.localizedDescription)")
+                } else {
+                    print("[NotificationWithPool]: Notification scheduled successfully: \(identifier)")
+                    DispatchQueue.main.async {
+                        self?.notify(.scheduled(identifier: identifier))
+                    }
+                }
+            }
         }
     }
 
@@ -330,9 +361,8 @@ extension NotificationManager: UNUserNotificationCenterDelegate {
         print("[NotificationWithPool]: Notification delivered: \(identifier)")
         notify(.delivered(identifier: identifier))
 
-        if let config = scheduleConfigs[identifier], config.useContentPool {
-            print("[NotificationWithPool]: Auto-rescheduling enabled for: \(identifier)")
-            rescheduleNotification(identifier: identifier, config: config)
+        if let components = dailyScheduleTimes[identifier] {
+            rescheduleDailyNotification(identifier: identifier, components: components)
         }
 
         completionHandler([.banner, .sound, .badge])
@@ -343,28 +373,16 @@ extension NotificationManager: UNUserNotificationCenterDelegate {
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
-        notify(.opened(identifier: response.notification.request.identifier))
+        let identifier = response.notification.request.identifier
+        notify(.opened(identifier: identifier))
+
+        if let components = dailyScheduleTimes[identifier] {
+            rescheduleDailyNotification(identifier: identifier, components: components)
+        }
 
         UNUserNotificationCenter.current().setBadgeCount(0)
 
         completionHandler()
-    }
-
-    private func rescheduleNotification(identifier: String, config: ScheduleConfig) {
-        guard config.interval > 0 else { return }
-        guard let content = randomContent() else {
-            print("[NotificationWithPool]: Failed to get random content for rescheduling")
-            return
-        }
-
-        let nextTriggerDate = Date().addingTimeInterval(config.interval)
-
-        createScheduledNotification(
-            identifier: identifier,
-            content: content,
-            scheduledTime: nextTriggerDate,
-            interval: 0
-        )
     }
 
 }

@@ -24,51 +24,50 @@ public class NotificationWithPoolPlugin: NSObject, FlutterPlugin {
             binaryMessenger: registrar.messenger()
         )
 
-        eventChannel.setStreamHandler(NotificationEventStream())
+        eventChannel.setStreamHandler(NotificationEventStreamHandler())
     }
 
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
 
         switch call.method {
-        case MethodKeys.initilize:
-            guard
-                let args = call.arguments as? [String: Any],
-                let contentPool = args["contentPool"] as? [[String: Any]]
-            else {
-                result(self.invalidArgs("contentPool"))
+        case MethodKeys.INITIALIZE:
+            guard let args = call.arguments as? [String: Any] else {
+                result(self.invalidArgs())
                 return
             }
 
+            let contentPool = args["contentPool"] as? [[String: Any]] ?? []
             let notificationContents = contentPool.compactMap {
                 NotificationContent.fromJson(json: $0)
             }
 
-            NotificationManager.shared.initilize(
-                contentPool: notificationContents
-            )
+            let contents = notificationContents.isEmpty ? nil : notificationContents
+            NotificationManager.shared.initialize(contentPool: contents)
 
             result(true)
 
-        case MethodKeys.createScheduledNotificationWithContentPool:
+        case MethodKeys.CREATE_DAILY_NOTIFICATION_WITH_CONTENT_POOL:
             guard
                 let args = call.arguments as? [String: Any],
                 let identifier = args["identifier"] as? String,
-                let scheduledTime = args["scheduledTime"] as? Double,
-                let intervalSeconds = args["interval"] as? Int
+                let hour = args["hour"] as? Int,
+                let minute = args["minute"] as? Int,
+                let second = args["second"] as? Int
             else {
                 result(self.invalidArgs())
                 return
             }
 
-            NotificationManager.shared.createScheduledNotificationWithContentPool(
+            NotificationManager.shared.createDailyNotificationWithContentPool(
                 identifier: identifier,
-                scheduledTime: Date(timeIntervalSince1970: scheduledTime),
-                interval: TimeInterval(intervalSeconds)
+                hour: hour,
+                minute: minute,
+                second: second
             )
 
             result(true)
 
-        case MethodKeys.createNotificationWithContentPool:
+        case MethodKeys.CREATE_NOTIFICATION_WITH_CONTENT_POOL:
             guard
                 let args = call.arguments as? [String: Any],
                 let identifier = args["identifier"] as? String
@@ -83,47 +82,24 @@ public class NotificationWithPoolPlugin: NSObject, FlutterPlugin {
 
             result(true)
 
-        case MethodKeys.createNotification:
+        case MethodKeys.CREATE_DELAYED_NOTIFICATION_WITH_CONTENT_POOL:
             guard
                 let args = call.arguments as? [String: Any],
                 let identifier = args["identifier"] as? String,
-                let contentJson = args["content"] as? [String: Any],
-                let content = NotificationContent.fromJson(json: contentJson)
+                let delaySeconds = args["delay"] as? Int
             else {
                 result(self.invalidArgs())
                 return
             }
 
-            NotificationManager.shared.createNotification(
+            NotificationManager.shared.createDelayedNotificationWithContentPool(
                 identifier: identifier,
-                content: content
+                delay: TimeInterval(delaySeconds)
             )
 
             result(true)
 
-        case MethodKeys.createScheduledNotification:
-            guard
-                let args = call.arguments as? [String: Any],
-                let identifier = args["identifier"] as? String,
-                let contentJson = args["content"] as? [String: Any],
-                let scheduledTime = args["scheduledTime"] as? Double,
-                let intervalSeconds = args["interval"] as? Int,
-                let content = NotificationContent.fromJson(json: contentJson)
-            else {
-                result(self.invalidArgs())
-                return
-            }
-
-            NotificationManager.shared.createScheduledNotification(
-                identifier: identifier,
-                content: content,
-                scheduledTime: Date(timeIntervalSince1970: scheduledTime),
-                interval: TimeInterval(intervalSeconds)
-            )
-
-            result(true)
-
-        case MethodKeys.updateContentPool:
+        case MethodKeys.UPDATE_CONTENT_POOL:
             guard
                 let args = call.arguments as? [String: Any],
                 let contentPool = args["contentPool"] as? [[String: Any]]
@@ -142,26 +118,7 @@ public class NotificationWithPoolPlugin: NSObject, FlutterPlugin {
 
             result(true)
 
-        case MethodKeys.updateScheduled:
-            guard
-                let args = call.arguments as? [String: Any],
-                let identifier = args["identifier"] as? String,
-                let scheduledTime = args["scheduledTime"] as? Double,
-                let intervalSeconds = args["interval"] as? Int
-            else {
-                result(self.invalidArgs())
-                return
-            }
-
-            NotificationManager.shared.updateScheduled(
-                identifier: identifier,
-                scheduledTime: Date(timeIntervalSince1970: scheduledTime),
-                interval: TimeInterval(intervalSeconds)
-            )
-
-            result(true)
-
-        case MethodKeys.cancel:
+        case MethodKeys.CANCEL:
             guard
                 let args = call.arguments as? [String: Any],
                 let identifier = args["identifier"] as? String
@@ -173,7 +130,7 @@ public class NotificationWithPoolPlugin: NSObject, FlutterPlugin {
             NotificationManager.shared.cancel(identifier: identifier)
             result(true)
 
-        case MethodKeys.cancelAll:
+        case MethodKeys.CANCEL_ALL:
             NotificationManager.shared.cancelAll()
             result(true)
 

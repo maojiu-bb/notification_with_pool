@@ -7,7 +7,7 @@
 
 import Flutter
 
-class NotificationEventStream: NSObject, FlutterStreamHandler, NotificationEventListener {
+final class NotificationEventStreamHandler: NSObject, FlutterStreamHandler, NotificationEventListener {
 
     private var eventSink: FlutterEventSink?
 
